@@ -1,0 +1,6 @@
+-sname tcp_server
+
+-setcookie tcp_server_cookie
+
++K true
++A30
