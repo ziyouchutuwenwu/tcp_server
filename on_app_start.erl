@@ -4,7 +4,5 @@
 
 main(Args) ->
   io:format("~n"),
-  io:format("*********************************************************~n"),
-  io:format("on app start~n"),
-  io:format("*********************************************************~n"),
+  io:format("try tcp_server_demo:start().~n"),
   io:format("~n").

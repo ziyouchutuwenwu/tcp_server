@@ -1,6 +1,7 @@
 -module(tcp_server_demo).
 
--compile(export_all).
+%% -compile(export_all).
+-export([start/0, send/1]).
 
 start() ->
   tcp_server:start("server1", 9999, demo_server_socket_config_behavior_impl).

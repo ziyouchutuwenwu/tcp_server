@@ -64,12 +64,13 @@ handle_info(timeout, #socket_info_record{config_behavior = ConfigBehavior, name 
 
       %%客户端连接成功
       {ok, {ClientIp, ClientPort}} = inet:peername(ClientSocket),
+      ClientIpStr = inet:ntoa(ClientIp),
       SocketHandlerModule = ConfigBehavior:get_socket_handler_module(),
-      SocketHandlerModule:on_client_connected(ClientSocket, ClientIp, ClientPort),
+      SocketHandlerModule:on_client_connected(ClientSocket, ClientIpStr, ClientPort),
 
       tcp_server_handler_sup:start_child(Name),
       {noreply, State#socket_info_record{
-        client_socket = ClientSocket, client_ip = ClientIp, client_port = ClientPort,
+        client_socket = ClientSocket, client_ip = ClientIpStr, client_port = ClientPort,
         recv_timer_ref = RecvTimerRef, recv_timeout_count = RecvTimeoutCount
       }};
     {error, Reason} ->
