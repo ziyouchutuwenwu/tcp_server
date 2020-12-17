@@ -1,18 +1,18 @@
--module(tcp_server_handler_sup).
+-module(tcp_client_handler_sup).
 -behaviour(supervisor).
 
 -export([start_link/3, start_child/1]).
 -export([init/1]).
 
-start_link(Name, LSock, ConfigBehavior) ->
+start_link(Name, {Ip, Port}, ConfigBehavior) ->
 	LocalModuleName = safe_atom:list_to_atom(Name ++ "_" ++ ?MODULE_STRING),
-	supervisor:start_link({local, LocalModuleName}, ?MODULE, [Name, LSock, ConfigBehavior]).
+	supervisor:start_link({local, LocalModuleName}, ?MODULE, [{Ip, Port}, ConfigBehavior]).
 
 start_child(Name) ->
 	LocalModuleName = safe_atom:list_to_atom(Name ++ "_" ++ ?MODULE_STRING),
 	supervisor:start_child(LocalModuleName, []).
 
-init([Name, LSock, ConfigBehavior]) ->
+init([{Ip, Port}, ConfigBehavior]) ->
 
 	RestartMode = simple_one_for_one,
 	MaxRestarts = 0,
@@ -25,10 +25,10 @@ init([Name, LSock, ConfigBehavior]) ->
 	Type = worker,
 
 	Child = {
-		tcp_server_handler,
-		{tcp_server_handler, start_link, [Name, LSock, ConfigBehavior]},
+		tcp_client_handler,
+		{tcp_client_handler, start_link, [{Ip, Port}, ConfigBehavior]},
 		Restart, Shutdown, Type,
-		[tcp_server_handler]
+		[tcp_client_handler]
 	},
 
 	Children = [Child],

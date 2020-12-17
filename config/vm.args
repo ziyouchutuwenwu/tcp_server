@@ -1,6 +1,6 @@
--sname tcp_server
+-sname tcp_client
 
--setcookie tcp_server_cookie
+-setcookie tcp_client_cookie
 
 +K true
 +A30
