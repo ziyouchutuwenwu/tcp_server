@@ -2,16 +2,16 @@
 
 -behaviour(socket_handler_behavior).
 
--export([on_client_connected/1, on_client_data/2, on_disconnected/1]).
+-export([on_client_connected/3, on_client_data/3, on_disconnected/2]).
 
-on_client_connected(IP) ->
-    io:format("客户端~p连接~n",[IP]),
+on_client_connected(_Socket, IP, Port) ->
+    io:format("客户端~p:~p连接成功~n",[IP, Port]),
     noreplay.
 
-on_client_data(Cmd, InfoBin) ->
+on_client_data(_Socket, Cmd, InfoBin) ->
     io:format("收到客户端数据~p ~p~n",[Cmd, InfoBin]),
     noreplay.
 
-on_disconnected(IP) ->
-    io:format("客户端~p断开连接~n",[IP]),
+on_disconnected(IP, Port) ->
+    io:format("客户端~p:~p断开连接~n",[IP, Port]),
     noreplay.

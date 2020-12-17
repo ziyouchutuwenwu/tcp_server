@@ -4,7 +4,7 @@
 -export([start_link/3, send_socket_msg/3]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--record(socket_info_record, {config_behavior, name, server_socket, client_socket, client_ip, recv_timer_ref, recv_timeout_count}).
+-record(socket_info_record, {config_behavior, name, server_socket, client_socket, client_ip, client_port, recv_timer_ref, recv_timeout_count}).
 
 start_link(Name, LSock, ConfigBehavior) ->
 	gen_server:start_link(?MODULE, [Name, LSock, ConfigBehavior], []).
@@ -18,7 +18,7 @@ handle_call(Msg, _From, State) ->
 handle_cast(stop, State) ->
 	{stop, normal, State}.
 
-handle_info({tcp, _Socket, Data}, #socket_info_record{config_behavior = ConfigBehavior, recv_timer_ref = OldRecvTimerRef} = State) ->
+handle_info({tcp, Socket, Data}, #socket_info_record{config_behavior = ConfigBehavior, recv_timer_ref = OldRecvTimerRef} = State) ->
 	OptionsModule = ConfigBehavior:get_socket_options_module(),
 
 	erlang:cancel_timer(OldRecvTimerRef),
@@ -32,7 +32,7 @@ handle_info({tcp, _Socket, Data}, #socket_info_record{config_behavior = ConfigBe
 	{Cmd, InfoBin} = SocketUnpackModule:unpack(DataBin),
 
 	SocketHandlerModule = ConfigBehavior:get_socket_handler_module(),
-	SocketHandlerModule:on_client_data(Cmd, InfoBin),
+	SocketHandlerModule:on_client_data(Socket, Cmd, InfoBin),
 
 	{noreply, State#socket_info_record{recv_timer_ref = NewRecvTimerRef}};
 
@@ -41,10 +41,10 @@ handle_info({tcp_passive, Socket}, #socket_info_record{config_behavior = ConfigB
 	inet:setopts(Socket, [{active, OptionsModule:get_active_count()}]),
 	{noreply, State};
 
-handle_info({tcp_closed, _Socket}, #socket_info_record{config_behavior = ConfigBehavior, client_ip = ClientIp} = State) ->
+handle_info({tcp_closed, _Socket}, #socket_info_record{config_behavior = ConfigBehavior, client_ip = ClientIp, client_port = ClientPort} = State) ->
 	%%客户端断开连接
 	SocketHandlerMod = ConfigBehavior:get_socket_handler_module(),
-	SocketHandlerMod:on_disconnected(ClientIp),
+	SocketHandlerMod:on_disconnected(ClientIp, ClientPort),
 
 	{stop, normal, State};
 
@@ -63,12 +63,16 @@ handle_info(timeout, #socket_info_record{config_behavior = ConfigBehavior, name 
 			RecvTimerRef = erlang:send_after(OptionsModule:get_tcp_recv_timeout(), self(), recv_time_out),
 
 			%%客户端连接成功
-			{ok, {ClientIp, _Port}} = inet:peername(ClientSocket),
+			{ok, {ClientIp, ClientPort}} = inet:peername(ClientSocket),
 			SocketHandlerModule = ConfigBehavior:get_socket_handler_module(),
-			SocketHandlerModule:on_client_connected(ClientIp),
+			SocketHandlerModule:on_client_connected(ClientSocket, ClientIp, ClientPort),
 
 			tcp_server_handler_sup:start_child(Name),
-			{noreply, State#socket_info_record{client_socket = ClientSocket, client_ip = ClientIp, recv_timer_ref = RecvTimerRef, recv_timeout_count = RecvTimeoutCount}};
+
+			{noreply, State#socket_info_record{
+				client_socket = ClientSocket, client_ip = ClientIp, client_port = ClientPort,
+				recv_timer_ref = RecvTimerRef, recv_timeout_count = RecvTimeoutCount
+			}};
 		{error, Reason} ->
 			tcp_server_handler_sup:start_child(Name),
 			{stop, Reason, State}
@@ -101,14 +105,3 @@ terminate(_Reason, #socket_info_record{client_socket = Socket}) ->
 
 code_change(_OldVsn, State, _Extra) ->
 	{ok, State}.
-
-%%发送数据, 无法抽离此模块, 因为socket不暴露给外面
-send_socket_msg(Cmd, InfoBin, #socket_info_record{config_behavior = ConfigBehavior, client_socket = Socket} = State) ->
-	SocketPackModule = ConfigBehavior:get_socket_package_module(),
-	DataBin = SocketPackModule:pack(Cmd, InfoBin),
-
-	SocketCodecModule = ConfigBehavior:get_socket_codec_module(),
-	Data = SocketCodecModule:encode(DataBin),
-
-	ok = gen_tcp:send(Socket, Data),
-	{noreply, State}.
