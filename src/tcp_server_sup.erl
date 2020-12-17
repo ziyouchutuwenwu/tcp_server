@@ -1,4 +1,9 @@
--module(tcp_client_sup).
+%%%-------------------------------------------------------------------
+%% @doc tcp_server top level supervisor.
+%% @end
+%%%-------------------------------------------------------------------
+
+-module(tcp_server_sup).
 
 -behaviour(supervisor).
 
