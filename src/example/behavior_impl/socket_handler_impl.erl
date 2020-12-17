@@ -6,7 +6,7 @@
 
 on_client_connected(Socket, IP, Port) ->
     io:format("客户端~p:~p连接~n",[IP, Port]),
-    tcp_server_test:send(Socket),
+    tcp_server_demo:send(Socket),
     noreplay.
 
 on_client_data(_Socket, Cmd, InfoBin) ->
