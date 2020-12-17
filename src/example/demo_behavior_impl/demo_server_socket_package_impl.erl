@@ -1,5 +1,5 @@
 -module(demo_server_socket_package_impl).
--behaviour(socket_package_behavior).
+-behaviour(tcp_server_socket_package_behavior).
 
 -export([unpack/1, pack/2]).
 
