@@ -4,9 +4,8 @@
 -export([start/0, send_by_socket/1, send_by_pid/1]).
 
 start() ->
-  tcp_server:start("server1", 9999, demo_server_socket_config_behavior_impl).
+  tcp_server:start("demo_server", 9999, demo_server_socket_config_behavior_impl).
 
-%% 需要的时候，手动调用
 send_by_socket(Socket) ->
   tcp_server_send:send_data_by_socket(Socket, 111, <<"msg send by socket">>, demo_server_socket_config_behavior_impl).
 
